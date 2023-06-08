@@ -16,6 +16,10 @@ require("dotenv").config({ path: path.join(root_dir, `.env`) });
 const cookieSession = require('cookie-session');
 
 
+/**
+ * ------------------------Session Setup
+ */
+
 // cors
 const whitelist = [
   "http://127.0.0.1:3000",
@@ -68,6 +72,11 @@ app.use(
   })
 );
 
+
+/**
+ * ------------------------routes
+ */
+
 // Routers
 const userAuthRouter = require("./routers/user/authRoutes");
 
@@ -78,9 +87,18 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/user/auth", userAuthRouter);
 
+
+/**
+ * ------------------------Error Handler
+ */
 // Error Handlers
 app.use(notFoundMiddleware);
 app.use(require("./middleware/errorHandler"));
+
+
+/**
+ * ------------------------Server
+ */
 
 const port = process.env.PORT || 5000;
 const start = async () => {
