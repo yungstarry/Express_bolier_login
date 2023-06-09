@@ -14,6 +14,7 @@ const fileUpload = require("express-fileupload");
 require("express-async-errors");
 require("dotenv").config({ path: path.join(root_dir, `.env`) });
 const cookieSession = require('cookie-session');
+const crypto = require("crypto");
 
 
 /**
@@ -24,7 +25,8 @@ const cookieSession = require('cookie-session');
 const whitelist = [
   "http://127.0.0.1:3000",
   "http://localhost:3000",
-  "http://localhost:3000/",
+  "http://127.0.0.1:5000",
+  "http://localhost:5000/",
 ];
 
 app.use(fileUpload({ createParentPath: true }));
@@ -43,8 +45,7 @@ const corsOptions = {
   credentials: true, //access-control-allow-credentials:true
   optionSuccessStatus: 200,
   methods: ["GET", "POST", "DELETE", "UPDATE", "PUT", "PATCH"],
-  allowedHeaders: "*",
-  "Access-Control-Request-Headers": "*",
+  allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept",
 };
 
 app.set("trust proxy", 1);
@@ -54,7 +55,7 @@ app.use(
     max: 60,
   })
 );
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 app.use(helmet());
 app.use(xss());
 app.use(mongoSanitize());
@@ -64,13 +65,26 @@ app.use(morgan("tiny"));
 
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
+
+// Generate a secure session secret
+const sessionSecret = crypto.randomBytes(64).toString('hex');
 app.use(
   cookieSession({
     name: "adordev-session",
-    keys: ["COOKIE_SECRET"], // should use as secret environment variable
+    keys: [sessionSecret],
     httpOnly: true,
   })
 );
+
+/**
+ * -------------------------View Engine
+ */
+
+// Set EJS as the view engine
+app.set("view engine", "ejs");
+
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
 
 
 /**
@@ -80,11 +94,13 @@ app.use(
 // Routers
 const userAuthRouter = require("./routers/user/authRoutes");
 
-// Route
+
+// home Route
 app.get("/", (req, res) => {
-  res.send("<h1>Hello World</h1>");
+  res.render('home');
 });
 
+// Use the userAuthRouter for the "/api/v1/user/auth" route
 app.use("/api/v1/user/auth", userAuthRouter);
 
 
@@ -100,7 +116,7 @@ app.use(require("./middleware/errorHandler"));
  * ------------------------Server
  */
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 const start = async () => {
   try {
     await connectDB();
